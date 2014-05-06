@@ -1,4 +1,4 @@
-local MAJOR, MINOR = "libFilters", 1
+local MAJOR, MINOR = "libFilters", 2
 local libFilters, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 if not libFilters then return end	--the same or newer version of this lib is already loaded into memory 
 --thanks to Seerah for the previous lines and library
@@ -56,7 +56,10 @@ local function SetInventoryFilter( filterType )
 	--I was originally trying to use BACKPACK_DEFAULT_LAYOUT_FRAGMENT.layoutData.additionalFilter,
 	--but that was not working.  Looked back on my AdvancedFilters and noticed that I had already
 	--solved that problem.  TLDR: Don't use BACKPACK_DEFAULT_LAYOUT_FRAGMENT for filtering!
-	local currentFilter = PLAYER_INVENTORY.appliedLayout.additionalFilter
+	local currentFilter
+	if(PLAYER_INVENTORY and PLAYER_INVENTORY.appliedLayout) then
+		currentFilter = PLAYER_INVENTORY.appliedLayout.additionalFilter
+	end
 
 	PLAYER_INVENTORY.inventories[inventoryType].additionalFilter = 
 		function(slot)
@@ -119,6 +122,7 @@ function libFilters:RegisterFilter( filterId, filterType, filterCallback )
 	--fail silently if the id isn't free or type out of range or if anything is nil
 	if(not filterId or idToFilter[filterId] or filterType < 1 or filterType > #filters
 		or not filterCallback or not filterType) then
+		zo_callLater(function() d("ERROR: " .. filterId .. " is already in use!") end, 100)
 		return
 	end
 
@@ -199,6 +203,7 @@ function libFilters:InitializeLibFilters()
 	self:RegisterFilter("LAF_ZO_defaultAdditionalStore", LAF_STORE, defaultAdditionalStore)
 	self:RegisterFilter("LAF_ZO_defaultAdditionalGuildStore", LAF_GUILDSTORE, defaultAdditionalGuildStore)
 	self:RegisterFilter("LAF_GuildStore_AlwaysTrue", LAF_GUILDSTORE, function(slot) return true end)
+
 
 	ZO_PreHook(SMITHING.deconstructionPanel.inventory, "AddItemData", DeconstructionFilter)
 end
