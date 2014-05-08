@@ -1,4 +1,4 @@
-local MAJOR, MINOR = "libFilters", 2
+local MAJOR, MINOR = "libFilters", 3
 local libFilters, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 if not libFilters then return end	--the same or newer version of this lib is already loaded into memory 
 --thanks to Seerah for the previous lines and library
@@ -15,7 +15,7 @@ LAF_GUILDSTORE = 6
 LAF_MAIL = 7
 LAF_TRADE = 8
 
-local filters = {
+libFilters.filters = {
 	[LAF_BAGS] = {},
 	[LAF_BANK] = {},
 	[LAF_GUILDBANK] = {},
@@ -25,11 +25,14 @@ local filters = {
 	[LAF_MAIL] = {},
 	[LAF_TRADE] = {}
 }
+local filters = libFilters.filters
 
-local LAFtoFragment = {}
+libFilters.LAFtoFragment = {}
+local LAFtoFragment = libFilters.LAFtoFragment
 
 --look-up map to find out which filter the id belongs to
-local idToFilter = {}
+libFilters.idToFilter = {}
+local idToFilter = libFilters.idToFilter
 
 --generally used to figure out which inventory to update
 local function GetInventoryType( filterType )
@@ -169,16 +172,16 @@ function libFilters:InventoryTypeToLAF( inventoryType )
 	elseif(inventoryType == INVENTORY_GUILD_BANK) then
 		return LAF_GUILDBANK
 	end
-
+ 
 	return 0
 end
 
 function libFilters:BagIdToLAF( badId )
-	if(inventoryType == BAG_BACKPACK) then
+	if(bagId == BAG_BACKPACK) then
 		return LAF_BAGS
-	elseif(inventoryType == BAG_BANK) then
+	elseif(bagId == BAG_BANK) then
 		return LAF_BANK
-	elseif(inventoryType == BAG_GUILDBANK) then
+	elseif(bagId == BAG_GUILDBANK) then
 		return LAF_GUILDBANK
 	end
 
@@ -186,24 +189,44 @@ function libFilters:BagIdToLAF( badId )
 end
 
 function libFilters:InitializeLibFilters()
+	if(oldminor and oldminor ~= 2 and oldminor ~= 1) then
+		libFilters.filters = oldminor.filters
+		libFilters.LAFtoFragment = oldminor.LAFtoFragment
+		libFilters.idToFilter = oldminor.idToFilter
+	end
+
 	local defaultAdditionalMail = BACKPACK_MAIL_LAYOUT_FRAGMENT.layoutData.additionalFilter
 	local defaultAdditionalTrade = BACKPACK_PLAYER_TRADE_LAYOUT_FRAGMENT.layoutData.additionalFilter
 	local defaultAdditionalStore = BACKPACK_STORE_LAYOUT_FRAGMENT.layoutData.additionalFilter
 	local defaultAdditionalGuildStore = BACKPACK_TRADING_HOUSE_LAYOUT_FRAGMENT.layoutData.additionalFilter
 
-	LAFtoFragment = {
-		[LAF_STORE] = BACKPACK_STORE_LAYOUT_FRAGMENT,
-		[LAF_GUILDSTORE] = BACKPACK_TRADING_HOUSE_LAYOUT_FRAGMENT,
-		[LAF_MAIL] = BACKPACK_MAIL_LAYOUT_FRAGMENT,
-		[LAF_TRADE] = BACKPACK_PLAYER_TRADE_LAYOUT_FRAGMENT
-	}
+	if(#LAFtoFragment == 0) then 
+		LAFtoFragment = {
+			[LAF_STORE] = BACKPACK_STORE_LAYOUT_FRAGMENT,
+			[LAF_GUILDSTORE] = BACKPACK_TRADING_HOUSE_LAYOUT_FRAGMENT,
+			[LAF_MAIL] = BACKPACK_MAIL_LAYOUT_FRAGMENT,
+			[LAF_TRADE] = BACKPACK_PLAYER_TRADE_LAYOUT_FRAGMENT
+		}
+	end
 
-	self:RegisterFilter("LAF_ZO_defaultAdditionalMail", LAF_MAIL, defaultAdditionalMail)
-	self:RegisterFilter("LAF_ZO_defaultAdditionalTrade", LAF_TRADE, defaultAdditionalTrade)
-	self:RegisterFilter("LAF_ZO_defaultAdditionalStore", LAF_STORE, defaultAdditionalStore)
-	self:RegisterFilter("LAF_ZO_defaultAdditionalGuildStore", LAF_GUILDSTORE, defaultAdditionalGuildStore)
-	self:RegisterFilter("LAF_GuildStore_AlwaysTrue", LAF_GUILDSTORE, function(slot) return true end)
-
+	if(not libFilters:IsFilterRegistered("LAF_ZO_defaultAdditionalMail")) then 
+		self:RegisterFilter("LAF_ZO_defaultAdditionalMail", LAF_MAIL, defaultAdditionalMail)
+	end
+	if(not libFilters:IsFilterRegistered("LAF_ZO_defaultAdditionalTrade")) then 
+		self:RegisterFilter("LAF_ZO_defaultAdditionalTrade", LAF_TRADE, defaultAdditionalTrade)
+	end
+	if(not libFilters:IsFilterRegistered("LAF_ZO_defaultAdditionalStore")) then 
+		self:RegisterFilter("LAF_ZO_defaultAdditionalStore", LAF_STORE, defaultAdditionalStore)
+	end
+	if(not libFilters:IsFilterRegistered("LAF_ZO_defaultAdditionalGuildStore")) then 
+		self:RegisterFilter("LAF_ZO_defaultAdditionalGuildStore", LAF_GUILDSTORE, defaultAdditionalGuildStore)
+	end
+	if(not libFilters:IsFilterRegistered("LAF_Store_AlwaysTrue")) then 
+		self:RegisterFilter("LAF_Store_AlwaysTrue", LAF_STORE, function(slot) return true end)
+	end
+	if(not libFilters:IsFilterRegistered("LAF_GuildStore_AlwaysTrue")) then 
+		self:RegisterFilter("LAF_GuildStore_AlwaysTrue", LAF_GUILDSTORE, function(slot) return true end)
+	end
 
 	ZO_PreHook(SMITHING.deconstructionPanel.inventory, "AddItemData", DeconstructionFilter)
 end
@@ -212,21 +235,21 @@ libFilters:InitializeLibFilters()
 
 --here is a handful of examples and tests!  these may expand in the future.
 
-function test( filterType )
-	if(not filterType) then return end
-	libFilters:RegisterFilter("test", filterType, function(slot)
-        local _,_,value = GetItemInfo(slot.bagId, slot.slotIndex)
-        return value > 20
-    end)
-end
+-- function test( filterType )
+-- 	if(not filterType) then return end
+-- 	libFilters:RegisterFilter("test", filterType, function(slot)
+--         local _,_,value = GetItemInfo(slot.bagId, slot.slotIndex)
+--         return value > 20
+--     end)
+-- end
 
-function testDecon()
-	libFilters:RegisterFilter("test", LAF_DECONSTRUCTION, function(bagId, slotIndex)
-        local _,_,value = GetItemInfo(bagId, slotIndex)
-        return value > 20
-    end)
-end
+-- function testDecon()
+-- 	libFilters:RegisterFilter("test", LAF_DECONSTRUCTION, function(bagId, slotIndex)
+--         local _,_,value = GetItemInfo(bagId, slotIndex)
+--         return value > 20
+--     end)
+-- end
 
-function untest()
-	libFilters:UnregisterFilter("test")
-end
+-- function untest()
+-- 	libFilters:UnregisterFilter("test")
+-- end

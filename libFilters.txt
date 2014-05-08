@@ -1,6 +1,6 @@
 ## Title: libFilters
 ## Author: ingeniousclown
-## Version: 1.0.0b
+## Version: 1.0r3
 ## APIVersion: 100003
 
 LibStub\LibStub.lua
