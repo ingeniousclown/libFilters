@@ -1,4 +1,4 @@
-local MAJOR, MINOR = "libFilters", 3
+local MAJOR, MINOR = "libFilters", 4
 local libFilters, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 if not libFilters then return end	--the same or newer version of this lib is already loaded into memory 
 --thanks to Seerah for the previous lines and library
@@ -125,7 +125,7 @@ function libFilters:RegisterFilter( filterId, filterType, filterCallback )
 	--fail silently if the id isn't free or type out of range or if anything is nil
 	if(not filterId or idToFilter[filterId] or filterType < 1 or filterType > #filters
 		or not filterCallback or not filterType) then
-		zo_callLater(function() d("ERROR: " .. filterId .. " is already in use!") end, 100)
+		d("ERROR: " .. filterId .. " is already in use!")
 		return
 	end
 
