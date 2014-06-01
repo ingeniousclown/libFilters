@@ -1,9 +1,11 @@
-local MAJOR, MINOR = "libFilters", 4
+local MAJOR, MINOR = "libFilters", 5
 local libFilters, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 if not libFilters then return end	--the same or newer version of this lib is already loaded into memory 
 --thanks to Seerah for the previous lines and library
 
 local _
+
+local IS_INITIALIZED = false
 
 --some constants for your filters
 LAF_BAGS = 1
@@ -189,11 +191,8 @@ function libFilters:BagIdToLAF( badId )
 end
 
 function libFilters:InitializeLibFilters()
-	if(oldminor and oldminor ~= 2 and oldminor ~= 1) then
-		libFilters.filters = oldminor.filters
-		libFilters.LAFtoFragment = oldminor.LAFtoFragment
-		libFilters.idToFilter = oldminor.idToFilter
-	end
+	if IS_INITIALIZED then return end
+	IS_INITIALIZED = true
 
 	local defaultAdditionalMail = BACKPACK_MAIL_LAYOUT_FRAGMENT.layoutData.additionalFilter
 	local defaultAdditionalTrade = BACKPACK_PLAYER_TRADE_LAYOUT_FRAGMENT.layoutData.additionalFilter
@@ -231,7 +230,8 @@ function libFilters:InitializeLibFilters()
 	ZO_PreHook(SMITHING.deconstructionPanel.inventory, "AddItemData", DeconstructionFilter)
 end
 
-libFilters:InitializeLibFilters()
+-- make sure you call this from your add-on loaded function!
+-- libFilters:InitializeLibFilters()
 
 --here is a handful of examples and tests!  these may expand in the future.
 
