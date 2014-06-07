@@ -1,11 +1,9 @@
-local MAJOR, MINOR = "libFilters", 5
+local MAJOR, MINOR = "libFilters", 6
 local libFilters, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 if not libFilters then return end	--the same or newer version of this lib is already loaded into memory 
 --thanks to Seerah for the previous lines and library
 
 local _
-
-local IS_INITIALIZED = false
 
 --some constants for your filters
 LAF_BAGS = 1
@@ -124,6 +122,8 @@ end
 
 --filterCallback must be a function with parameter (slot) and return true/false
 function libFilters:RegisterFilter( filterId, filterType, filterCallback )
+	--lazily initialize the add-on
+	if(not self.IS_INITIALIZED) then self:InitializeLibFilters() end
 	--fail silently if the id isn't free or type out of range or if anything is nil
 	if(not filterId or idToFilter[filterId] or filterType < 1 or filterType > #filters
 		or not filterCallback or not filterType) then
@@ -150,6 +150,8 @@ function libFilters:RegisterFilter( filterId, filterType, filterCallback )
 end
 
 function libFilters:UnregisterFilter( filterId )
+	--lazily initialize the add-on
+	if(not self.IS_INITIALIZED) then self:InitializeLibFilters() end
 	if(not filterId or not self:IsFilterRegistered(filterId)) then return end --fail quietly
 
 	local filterType = idToFilter[filterId]
@@ -191,22 +193,19 @@ function libFilters:BagIdToLAF( badId )
 end
 
 function libFilters:InitializeLibFilters()
-	if IS_INITIALIZED then return end
-	IS_INITIALIZED = true
-
+	if self.IS_INITIALIZED then return end
+	self.IS_INITIALIZED = true
 	local defaultAdditionalMail = BACKPACK_MAIL_LAYOUT_FRAGMENT.layoutData.additionalFilter
 	local defaultAdditionalTrade = BACKPACK_PLAYER_TRADE_LAYOUT_FRAGMENT.layoutData.additionalFilter
 	local defaultAdditionalStore = BACKPACK_STORE_LAYOUT_FRAGMENT.layoutData.additionalFilter
 	local defaultAdditionalGuildStore = BACKPACK_TRADING_HOUSE_LAYOUT_FRAGMENT.layoutData.additionalFilter
 
-	if(#LAFtoFragment == 0) then 
-		LAFtoFragment = {
-			[LAF_STORE] = BACKPACK_STORE_LAYOUT_FRAGMENT,
-			[LAF_GUILDSTORE] = BACKPACK_TRADING_HOUSE_LAYOUT_FRAGMENT,
-			[LAF_MAIL] = BACKPACK_MAIL_LAYOUT_FRAGMENT,
-			[LAF_TRADE] = BACKPACK_PLAYER_TRADE_LAYOUT_FRAGMENT
-		}
-	end
+	LAFtoFragment = {
+		[LAF_STORE] = BACKPACK_STORE_LAYOUT_FRAGMENT,
+		[LAF_GUILDSTORE] = BACKPACK_TRADING_HOUSE_LAYOUT_FRAGMENT,
+		[LAF_MAIL] = BACKPACK_MAIL_LAYOUT_FRAGMENT,
+		[LAF_TRADE] = BACKPACK_PLAYER_TRADE_LAYOUT_FRAGMENT
+	}
 
 	if(not libFilters:IsFilterRegistered("LAF_ZO_defaultAdditionalMail")) then 
 		self:RegisterFilter("LAF_ZO_defaultAdditionalMail", LAF_MAIL, defaultAdditionalMail)
@@ -228,10 +227,8 @@ function libFilters:InitializeLibFilters()
 	end
 
 	ZO_PreHook(SMITHING.deconstructionPanel.inventory, "AddItemData", DeconstructionFilter)
-end
 
--- make sure you call this from your add-on loaded function!
--- libFilters:InitializeLibFilters()
+end
 
 --here is a handful of examples and tests!  these may expand in the future.
 
